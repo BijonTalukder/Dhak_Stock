@@ -1,32 +1,95 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar as RNStatusBar } from 'react-native';
-import { colors, globalStyles } from './theme';
-import { TickerBar, DSEXBar } from './components/HeaderBars';
+import React, { useCallback, useEffect, useState } from 'react';
+import { StatusBar as RNStatusBar, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BottomNav } from './components/BottomNav';
-import { MarketTab } from './tabs/MarketTab';
-import { PortfolioTab } from './tabs/PortfolioTab';
-import { WatchlistTab } from './tabs/WatchlistTab';
+import { DSEXBar, TickerBar } from './components/HeaderBars';
+import { BuySellModal, LoginModal, StockDetailModal } from './components/Modals';
+import { Badge } from './components/SharedComponents';
+import { StockChartScreen } from './components/StockChartScreen';
+import { Holding } from './data/fakeData';
 import { LeaderboardTab } from './tabs/LeaderboardTab';
 import { LearnTab } from './tabs/LearnTab';
-import { LoginModal, StockDetailModal, BuySellModal } from './components/Modals';
-import { Badge } from './components/SharedComponents';
-import { Stock, Holding } from './data/fakeData';
+import { MappedStock, MarketTab } from './tabs/MarketTab';
+import { PortfolioTab } from './tabs/PortfolioTab';
+import { WatchlistTab } from './tabs/WatchlistTab';
+import { colors, globalStyles } from './theme';
+import { clear as clearStorage, getTokenSync, getUser, init as initStorage, setWallet as saveWallet, setPortfolio as savePortfolio, setWatchlist as saveWatchlist } from './utils/storage';
+import { useGetProfileQuery } from './api/services/auth/authApi';
+import { useGetHoldingsQuery, useBuyStockMutation, useSellStockMutation } from './api/services/trade/tradeApi';
+import { useGetWatchlistQuery, useAddToWatchlistMutation, useRemoveFromWatchlistMutation } from './api/services/watchlist/watchlistApi';
+
+type AppStock = { symbol: string; name: string; sector: string; price: number; change: number; pct: number; vol: number; spark: number[]; dayChart: number[] };
 
 export default function AppContainer() {
-  const [mode, setMode] = useState('guest'); // guest | free | premium
+  const [mode, setMode] = useState('guest');
   const [activeTab, setActiveTab] = useState('market');
-  const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
+  const [selectedStock, setSelectedStock] = useState<MappedStock | null>(null);
   const [showLogin, setShowLogin] = useState(false);
-  const [buySellData, setBuySellData] = useState<{ stock: Stock; isSell: boolean; holding: Holding | null } | null>(null);
-  const [pendingBuyStock, setPendingBuyStock] = useState<Stock | null>(null);
+  const [buySellData, setBuySellData] = useState<{ stock: MappedStock; isSell: boolean; holding: Holding | null } | null>(null);
+  const [pendingBuyStock, setPendingBuyStock] = useState<MappedStock | null>(null);
   const [wallet, setWallet] = useState(100000);
   const [portfolio, setPortfolio] = useState<Holding[]>([]);
-  const [watchlist, setWatchlist] = useState(['GP', 'SQUAREPH']);
+  const [watchlist, setWatchlist] = useState<string[]>(['GP', 'SQUAREPH']);
   const [userName, setUserName] = useState('Trader');
+  const [tradeError, setTradeError] = useState('');
 
-  const handleLogin = useCallback((name: string) => {
+  const isLoggedIn = mode !== 'guest';
+
+  const { data: profileData } = useGetProfileQuery(undefined, { skip: !isLoggedIn });
+  const { data: holdingsData } = useGetHoldingsQuery(undefined, { skip: !isLoggedIn });
+  const { data: watchlistData } = useGetWatchlistQuery(undefined, { skip: !isLoggedIn });
+
+
+  const [buyStock] = useBuyStockMutation();
+  const [sellStock] = useSellStockMutation();
+  const [addToWatchlist] = useAddToWatchlistMutation();
+  const [removeFromWatchlist] = useRemoveFromWatchlistMutation();
+
+  useEffect(() => {
+    (async () => {
+      await initStorage();
+      const token = getTokenSync();
+      const userStr = await getUser();
+      if (token && userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          setMode('free');
+          setUserName(user.name || 'Trader');
+        } catch { }
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (profileData?.data?.wallet) {
+      const w = profileData.data.wallet;
+      setWallet(w.balance);
+      saveWallet(w.balance);
+    }
+  }, [profileData]);
+
+  useEffect(() => {
+    if (holdingsData?.data) {
+      const mapped = holdingsData.data.map(h => ({
+        symbol: h.stockCode,
+        qty: h.quantity,
+        avgPrice: h.avgBuyPrice,
+      }));
+      setPortfolio(mapped);
+      savePortfolio(mapped);
+    }
+  }, [holdingsData]);
+
+  useEffect(() => {
+    if (watchlistData?.data) {
+      const codes = watchlistData.data.map(w => w.stockCode);
+      setWatchlist(codes);
+      saveWatchlist(codes);
+    }
+  }, [watchlistData]);
+
+  const handleLogin = useCallback((name: string, token?: string, user?: any) => {
     setMode('free');
-    setUserName(name);
+    setUserName(name || user?.name || 'Trader');
     setShowLogin(false);
     if (pendingBuyStock) {
       setBuySellData({ stock: pendingBuyStock, isSell: false, holding: null });
@@ -34,53 +97,52 @@ export default function AppContainer() {
     }
   }, [pendingBuyStock]);
 
-  const handleBuy = useCallback((stock: Stock) => {
+  const handleBuy = useCallback((stock: AppStock) => {
     if (mode === 'guest') {
-      setPendingBuyStock(stock);
+      setPendingBuyStock(stock as MappedStock);
       setShowLogin(true);
       return;
     }
+    setTradeError('');
     const holding = portfolio.find(h => h.symbol === stock.symbol) || null;
-    setBuySellData({ stock, isSell: false, holding });
+    setBuySellData({ stock: stock as MappedStock, isSell: false, holding });
   }, [mode, portfolio]);
 
-  const handleSell = useCallback((stock: Stock, holding: Holding) => {
-    setBuySellData({ stock, isSell: true, holding });
+  const handleSell = useCallback((stock: AppStock, holding: Holding) => {
+    setTradeError('');
+    setBuySellData({ stock: stock as MappedStock, isSell: true, holding });
   }, []);
 
-  const handleTrade = useCallback((stock: Stock, qty: number, isSell: boolean) => {
-    const cost = stock.price * qty;
-    const fee = cost * 0.005;
-    if (isSell) {
-      const holding = portfolio.find(h => h.symbol === stock.symbol);
-      if (!holding || holding.qty < qty) return;
-      const received = cost - fee;
-      setWallet(w => w + received);
-      setPortfolio(prev => prev.map(h => h.symbol === stock.symbol ? { ...h, qty: h.qty - qty } : h).filter(h => h.qty > 0));
-    } else {
-      const totalCost = cost + fee;
-      if (totalCost > wallet) return;
-      setWallet(w => w - totalCost);
-      setPortfolio(prev => {
-        const existing = prev.find(h => h.symbol === stock.symbol);
-        if (existing) {
-          const newQty = existing.qty + qty;
-          const newAvg = (existing.avgPrice * existing.qty + stock.price * qty) / newQty;
-          return prev.map(h => h.symbol === stock.symbol ? { ...h, qty: newQty, avgPrice: parseFloat(newAvg.toFixed(2)) } : h);
-        }
-        return [...prev, { symbol: stock.symbol, qty, avgPrice: stock.price }];
-      });
+  const handleTrade = useCallback(async (stock: MappedStock, qty: number, isSell: boolean) => {
+    setTradeError('');
+    try {
+      const res = isSell
+        ? await sellStock({ stockCode: stock.symbol, quantity: qty, price: stock.price }).unwrap()
+        : await buyStock({ stockCode: stock.symbol, quantity: qty, price: stock.price }).unwrap();
+      if (res.success) {
+        setBuySellData(null);
+      }
+    } catch (err: any) {
+      const msg = err?.data?.message || 'Trade failed';
+      setTradeError(msg);
+      setTimeout(() => setBuySellData(null), 2000);
     }
-    setBuySellData(null);
-  }, [wallet, portfolio]);
+  }, [buyStock, sellStock]);
 
-  const handleToggleWatch = useCallback((symbol: string) => {
+  const handleToggleWatch = useCallback(async (symbol: string) => {
     if (mode === 'guest') {
       setShowLogin(true);
       return;
     }
-    setWatchlist(prev => prev.includes(symbol) ? prev.filter(s => s !== symbol) : [...prev, symbol]);
-  }, [mode]);
+    const already = watchlist.includes(symbol);
+    try {
+      if (already) {
+        await removeFromWatchlist(symbol).unwrap();
+      } else {
+        await addToWatchlist({ stockCode: symbol }).unwrap();
+      }
+    } catch { }
+  }, [mode, watchlist, addToWatchlist, removeFromWatchlist]);
 
   const handleTabChange = useCallback((tab: string) => {
     if (mode === 'guest' && (tab === 'portfolio' || tab === 'watchlist')) {
@@ -89,6 +151,15 @@ export default function AppContainer() {
     }
     setActiveTab(tab);
   }, [mode]);
+
+  const handleLogout = useCallback(() => {
+    clearStorage();
+    setMode('guest');
+    setWallet(100000);
+    setPortfolio([]);
+    setWatchlist(['GP', 'SQUAREPH']);
+    setActiveTab('market');
+  }, []);
 
   const holding = selectedStock ? portfolio.find(h => h.symbol === selectedStock.symbol) : null;
 
@@ -118,7 +189,7 @@ export default function AppContainer() {
                   <Text style={{ fontSize: 10, color: colors.textSub }}>Cash</Text>
                   <Text style={{ fontSize: 12, fontWeight: '600', color: colors.gain }}>৳{(wallet / 1000).toFixed(1)}K</Text>
                 </View>
-                <TouchableOpacity onPress={() => { setMode('guest'); setWallet(100000); setPortfolio([]); setActiveTab('market'); }} style={styles.avatar}>
+                <TouchableOpacity onPress={handleLogout} style={styles.avatar}>
                   <Text style={{ fontSize: 11, fontWeight: '600', color: colors.blue }}>{userName.slice(0, 2).toUpperCase()}</Text>
                 </TouchableOpacity>
               </View>
@@ -145,15 +216,16 @@ export default function AppContainer() {
         {activeTab === 'market' && <MarketTab mode={mode} watchlist={watchlist} onToggleWatch={handleToggleWatch} onSelectStock={setSelectedStock} onBuy={handleBuy} />}
         {activeTab === 'portfolio' && <PortfolioTab portfolio={portfolio} wallet={wallet} onBuy={handleBuy} onSell={handleSell} />}
         {activeTab === 'watchlist' && <WatchlistTab watchlist={watchlist} onToggleWatch={handleToggleWatch} onSelectStock={setSelectedStock} onBuy={handleBuy} />}
-        {activeTab === 'leaderboard' && <LeaderboardTab portfolio={portfolio} wallet={wallet} />}
+        {activeTab === 'leaderboard' && <LeaderboardTab />}
         {activeTab === 'learn' && <LearnTab />}
+        {activeTab === 'chart' && <StockChartScreen />}
       </View>
 
       <BottomNav activeTab={activeTab} setActiveTab={handleTabChange} mode={mode} />
 
       <LoginModal visible={showLogin} onLogin={handleLogin} onClose={() => { setShowLogin(false); setPendingBuyStock(null); }} />
       {selectedStock && <StockDetailModal visible={!!selectedStock} stock={selectedStock} onClose={() => setSelectedStock(null)} isLoggedIn={mode !== 'guest'} isWatched={watchlist.includes(selectedStock.symbol)} onToggleWatch={handleToggleWatch} onBuy={handleBuy} onSell={handleSell} holding={holding} mode={mode} />}
-      {buySellData && <BuySellModal visible={!!buySellData} stock={buySellData.stock} isSell={buySellData.isSell} wallet={wallet} holding={buySellData.holding} onTrade={handleTrade} onClose={() => setBuySellData(null)} />}
+      {buySellData && <BuySellModal visible={!!buySellData} stock={buySellData.stock} isSell={buySellData.isSell} wallet={wallet} holding={buySellData.holding} onTrade={handleTrade} onClose={() => setBuySellData(null)} error={tradeError} />}
     </View>
   );
 }

@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { colors, globalStyles } from '../theme';
-import { STOCKS, fmt, Stock } from '../data/fakeData';
+import { STOCKS, fmt } from '../data/fakeData';
 import { SparkLine } from '../components/SparkLine';
 import { Badge, Button } from '../components/SharedComponents';
+import { MappedStock } from './MarketTab';
 
 interface WatchlistTabProps {
   watchlist: string[];
   onToggleWatch: (symbol: string) => void;
-  onSelectStock: (stock: Stock) => void;
-  onBuy: (stock: Stock) => void;
+  onSelectStock: (stock: MappedStock) => void;
+  onBuy: (stock: MappedStock) => void;
 }
 
 export const WatchlistTab: React.FC<WatchlistTabProps> = ({ watchlist, onToggleWatch, onSelectStock, onBuy }) => {

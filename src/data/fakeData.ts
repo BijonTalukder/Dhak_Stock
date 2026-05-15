@@ -1,5 +1,5 @@
 export interface Stock {
-  id: number;
+  id: string;
   symbol: string;
   name: string;
   sector: string;
@@ -7,10 +7,14 @@ export interface Stock {
   change: number;
   pct: number;
   vol: number;
-  mktCap: string;
-  pe: number;
-  high52: number;
-  low52: number;
+  high: number;
+  low: number;
+  open: number;
+  close: number;
+  ycp: number;
+  trade: number;
+  value: number;
+  dseIndex: number;
   spark: number[];
   dayChart: number[];
 }
@@ -75,24 +79,24 @@ export function genDayChart(base: number, n: number = 78): number[] {
 }
 
 export const RAW_STOCKS = [
-  { id: 1, symbol: 'GP', name: 'Grameenphone', sector: 'Telecom', price: 342.5, change: 2.35, pct: 0.69, vol: 1234567, mktCap: '92,450', pe: 18.5, high52: 390.0, low52: 298.0 },
-  { id: 2, symbol: 'BRACBANK', name: 'BRAC Bank', sector: 'Banking', price: 42.3, change: -0.8, pct: -1.86, vol: 4567890, mktCap: '14,210', pe: 12.3, high52: 52.0, low52: 35.2 },
-  { id: 3, symbol: 'DUTCHBANGL', name: 'Dutch-Bangla Bank', sector: 'Banking', price: 78.6, change: 1.2, pct: 1.55, vol: 2345678, mktCap: '25,100', pe: 15.2, high52: 88.0, low52: 61.0 },
-  { id: 4, symbol: 'SQUAREPH', name: 'Square Pharma', sector: 'Pharma', price: 235.7, change: 3.5, pct: 1.51, vol: 876543, mktCap: '45,000', pe: 22.1, high52: 268.0, low52: 198.0 },
-  { id: 5, symbol: 'RENATA', name: 'Renata Limited', sector: 'Pharma', price: 1285.0, change: -15.0, pct: -1.15, vol: 123456, mktCap: '38,100', pe: 28.4, high52: 1380.0, low52: 1090.0 },
-  { id: 6, symbol: 'BEXIMCO', name: 'Beximco Ltd', sector: 'Textile', price: 28.4, change: 0.9, pct: 3.27, vol: 12345678, mktCap: '8,520', pe: 9.8, high52: 35.0, low52: 21.0 },
-  { id: 7, symbol: 'WALTONHIL', name: 'Walton Hi-Tech', sector: 'Electronics', price: 865.5, change: 12.5, pct: 1.47, vol: 567890, mktCap: '120,400', pe: 25.3, high52: 942.0, low52: 720.0 },
-  { id: 8, symbol: 'MARICO', name: 'Marico Bangladesh', sector: 'FMCG', price: 2145.0, change: 45.0, pct: 2.14, vol: 45678, mktCap: '52,100', pe: 32.6, high52: 2290.0, low52: 1840.0 },
-  { id: 9, symbol: 'CITYBANK', name: 'The City Bank', sector: 'Banking', price: 26.8, change: -0.5, pct: -1.83, vol: 5678901, mktCap: '9,830', pe: 10.5, high52: 34.0, low52: 22.0 },
-  { id: 10, symbol: 'MTB', name: 'Mutual Trust Bank', sector: 'Banking', price: 33.5, change: 1.1, pct: 3.4, vol: 3456789, mktCap: '6,240', pe: 11.2, high52: 40.0, low52: 27.0 },
-  { id: 11, symbol: 'OLYMPIC', name: 'Olympic Industries', sector: 'Food', price: 198.4, change: 5.6, pct: 2.9, vol: 234567, mktCap: '18,100', pe: 20.4, high52: 225.0, low52: 155.0 },
-  { id: 12, symbol: 'BSRM', name: 'BSRM Steels', sector: 'Steel', price: 89.2, change: -2.3, pct: -2.51, vol: 1234567, mktCap: '11,000', pe: 14.8, high52: 115.0, low52: 78.0 },
-  { id: 13, symbol: 'LHBL', name: 'LafargeHolcim BD', sector: 'Cement', price: 64.7, change: 1.8, pct: 2.86, vol: 2345678, mktCap: '16,000', pe: 18.9, high52: 78.0, low52: 51.0 },
-  { id: 14, symbol: 'TITASGAS', name: 'Titas Gas T&D', sector: 'Energy', price: 38.9, change: -0.6, pct: -1.52, vol: 4567890, mktCap: '7,820', pe: 8.9, high52: 46.0, low52: 31.0 },
-  { id: 15, symbol: 'SINGERBD', name: 'Singer Bangladesh', sector: 'Electronics', price: 185.3, change: -3.2, pct: -1.7, vol: 345678, mktCap: '12,100', pe: 16.7, high52: 218.0, low52: 158.0 },
-  { id: 16, symbol: 'PADMALIFE', name: 'Padma Life Ins.', sector: 'Insurance', price: 44.6, change: 2.1, pct: 4.94, vol: 1987654, mktCap: '3,400', pe: 14.2, high52: 55.0, low52: 33.0 },
-  { id: 17, symbol: 'SUMMITPOW', name: 'Summit Power', sector: 'Energy', price: 38.2, change: -0.9, pct: -2.30, vol: 3210987, mktCap: '9,100', pe: 11.0, high52: 48.0, low52: 29.0 },
-  { id: 18, symbol: 'ISLAMIBANK', name: 'Islami Bank BD', sector: 'Banking', price: 31.5, change: 0.4, pct: 1.28, vol: 6789012, mktCap: '12,600', pe: 9.5, high52: 38.0, low52: 25.0 },
+  { id: '1', symbol: 'GP', name: 'Grameenphone', sector: 'Telecom', price: 342.5, change: 2.35, pct: 0.69, vol: 1234567, high: 390.0, low: 298.0, open: 340.0, close: 342.5, ycp: 340.15, trade: 1200, value: 42.0, dseIndex: 1 },
+  { id: '2', symbol: 'BRACBANK', name: 'BRAC Bank', sector: 'Banking', price: 42.3, change: -0.8, pct: -1.86, vol: 4567890, high: 52.0, low: 35.2, open: 43.0, close: 42.3, ycp: 43.1, trade: 3500, value: 19.3, dseIndex: 2 },
+  { id: '3', symbol: 'DUTCHBANGL', name: 'Dutch-Bangla Bank', sector: 'Banking', price: 78.6, change: 1.2, pct: 1.55, vol: 2345678, high: 88.0, low: 61.0, open: 77.5, close: 78.6, ycp: 77.4, trade: 2100, value: 18.4, dseIndex: 3 },
+  { id: '4', symbol: 'SQUAREPH', name: 'Square Pharma', sector: 'Pharma', price: 235.7, change: 3.5, pct: 1.51, vol: 876543, high: 268.0, low: 198.0, open: 232.0, close: 235.7, ycp: 232.2, trade: 950, value: 20.6, dseIndex: 4 },
+  { id: '5', symbol: 'RENATA', name: 'Renata Limited', sector: 'Pharma', price: 1285.0, change: -15.0, pct: -1.15, vol: 123456, high: 1380.0, low: 1090.0, open: 1300.0, close: 1285.0, ycp: 1300.0, trade: 200, value: 15.9, dseIndex: 5 },
+  { id: '6', symbol: 'BEXIMCO', name: 'Beximco Ltd', sector: 'Textile', price: 28.4, change: 0.9, pct: 3.27, vol: 12345678, high: 35.0, low: 21.0, open: 27.5, close: 28.4, ycp: 27.5, trade: 8000, value: 35.1, dseIndex: 6 },
+  { id: '7', symbol: 'WALTONHIL', name: 'Walton Hi-Tech', sector: 'Electronics', price: 865.5, change: 12.5, pct: 1.47, vol: 567890, high: 942.0, low: 720.0, open: 853.0, close: 865.5, ycp: 853.0, trade: 600, value: 49.1, dseIndex: 7 },
+  { id: '8', symbol: 'MARICO', name: 'Marico Bangladesh', sector: 'FMCG', price: 2145.0, change: 45.0, pct: 2.14, vol: 45678, high: 2290.0, low: 1840.0, open: 2100.0, close: 2145.0, ycp: 2100.0, trade: 50, value: 9.8, dseIndex: 8 },
+  { id: '9', symbol: 'CITYBANK', name: 'The City Bank', sector: 'Banking', price: 26.8, change: -0.5, pct: -1.83, vol: 5678901, high: 34.0, low: 22.0, open: 27.3, close: 26.8, ycp: 27.3, trade: 4200, value: 15.2, dseIndex: 9 },
+  { id: '10', symbol: 'MTB', name: 'Mutual Trust Bank', sector: 'Banking', price: 33.5, change: 1.1, pct: 3.4, vol: 3456789, high: 40.0, low: 27.0, open: 32.4, close: 33.5, ycp: 32.4, trade: 2800, value: 11.6, dseIndex: 10 },
+  { id: '11', symbol: 'OLYMPIC', name: 'Olympic Industries', sector: 'Food', price: 198.4, change: 5.6, pct: 2.9, vol: 234567, high: 225.0, low: 155.0, open: 193.0, close: 198.4, ycp: 192.8, trade: 300, value: 4.7, dseIndex: 11 },
+  { id: '12', symbol: 'BSRM', name: 'BSRM Steels', sector: 'Steel', price: 89.2, change: -2.3, pct: -2.51, vol: 1234567, high: 115.0, low: 78.0, open: 91.5, close: 89.2, ycp: 91.5, trade: 1500, value: 11.0, dseIndex: 12 },
+  { id: '13', symbol: 'LHBL', name: 'LafargeHolcim BD', sector: 'Cement', price: 64.7, change: 1.8, pct: 2.86, vol: 2345678, high: 78.0, low: 51.0, open: 62.9, close: 64.7, ycp: 62.9, trade: 2000, value: 15.2, dseIndex: 13 },
+  { id: '14', symbol: 'TITASGAS', name: 'Titas Gas T&D', sector: 'Energy', price: 38.9, change: -0.6, pct: -1.52, vol: 4567890, high: 46.0, low: 31.0, open: 39.5, close: 38.9, ycp: 39.5, trade: 3500, value: 17.8, dseIndex: 14 },
+  { id: '15', symbol: 'SINGERBD', name: 'Singer Bangladesh', sector: 'Electronics', price: 185.3, change: -3.2, pct: -1.7, vol: 345678, high: 218.0, low: 158.0, open: 188.5, close: 185.3, ycp: 188.5, trade: 400, value: 6.4, dseIndex: 15 },
+  { id: '16', symbol: 'PADMALIFE', name: 'Padma Life Ins.', sector: 'Insurance', price: 44.6, change: 2.1, pct: 4.94, vol: 1987654, high: 55.0, low: 33.0, open: 42.5, close: 44.6, ycp: 42.5, trade: 1800, value: 8.9, dseIndex: 16 },
+  { id: '17', symbol: 'SUMMITPOW', name: 'Summit Power', sector: 'Energy', price: 38.2, change: -0.9, pct: -2.30, vol: 3210987, high: 48.0, low: 29.0, open: 39.1, close: 38.2, ycp: 39.1, trade: 2500, value: 12.3, dseIndex: 17 },
+  { id: '18', symbol: 'ISLAMIBANK', name: 'Islami Bank BD', sector: 'Banking', price: 31.5, change: 0.4, pct: 1.28, vol: 6789012, high: 38.0, low: 25.0, open: 31.1, close: 31.5, ycp: 31.1, trade: 5000, value: 21.4, dseIndex: 18 },
 ];
 
 export const STOCKS: Stock[] = RAW_STOCKS.map(s => ({ ...s, spark: genSpark(s.price, s.pct), dayChart: genDayChart(s.price) }));

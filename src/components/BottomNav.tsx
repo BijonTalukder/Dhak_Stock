@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform } from 'react-native';
+import { Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../theme';
 
 interface BottomNavProps {
@@ -15,6 +15,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, m
     { id: 'watchlist', label: 'Watchlist', icon: '⭐', locked: mode === 'guest' },
     { id: 'leaderboard', label: 'Ranking', icon: '🏆' },
     { id: 'learn', label: 'Learn', icon: '📚' },
+    { id: 'chart', label: 'chart', icon: '📚' },
+
   ];
 
   return (

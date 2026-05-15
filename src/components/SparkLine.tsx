@@ -17,7 +17,7 @@ export const SparkLine: React.FC<SparkLineProps> = ({ data, positive, w = 64, h 
   const fillId = `fill-${positive ? 'g' : 'r'}-${w}`;
 
   return (
-    <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+    <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ pointerEvents: 'none' }}>
       <Defs>
         <LinearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0%" stopColor={color} stopOpacity="0.25" />
